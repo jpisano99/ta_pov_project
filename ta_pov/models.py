@@ -23,6 +23,7 @@ class ta_povs(db.Model):
     start_date = db.Column(db.DateTime)
     end_date = db.Column(db.DateTime)
     active = db.Column(db.Integer)
+    extended = db.Column(db.Integer)
     deleted = db.Column(db.Integer)
 
     def newest_name(num):
