@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script
+
+    <!--Bootstrap 4 and FontAwesome CDN css files-->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <title>Tetration POV Bot</title>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <nav>
+                <ul class="nav nav-pills pull-right">
+                    <li role="presentation" class="active"><a href="#"> Home &nbsp;&nbsp;</a>
+                    </li>
+                    <li role="presentation"><a href="#">Input Names Here&nbsp;&nbsp;</a>
+                    </li>
+                    <li role="presentation"><a href="#"> Main Page </a>
+                    </li>
+                </ul>
+            </nav>
+            <h3 class="text-muted">     Welcome to the Tetration POV Bot Landing Page !!</h3>
+        </div>
+
+        <div class="jumbotron">
+            <h1>Tetration POV Bot Landing Page</h1>
+            <p class="lead"></p>
+            <a class="btn btn-lg btn-success" href="/update_ss" role="button">Click to Update SmartSheets</a>
+            <a class="btn btn-lg btn-success" href="/ajax_test" role="button">Click to Test AJAX</a>
+
+            <br><br>
+            <p> We currently have {{ pov_count }} POV's in database</p>
+            <p> We currently have {{ sheet_dict['row_count'] }} POV's in SmartSheets</p>
+            <p> SmartSheets last updated on {{ sheet_dict['modified_at'] }} </p>
+            <a href=" {{sheet_dict['sheet_url']}} "> POV Smartsheet link </a>
+        </p>
+        </div>
+    </div>
+
+    <!--Use LOCAL copies of Bootstrap 4 and jquey files to allow Pycharm Autocomplete to work-->
+{#    <script src="../static/js/jquery-3.1.0.min.js"> </script>#}
+{#    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>#}
+{#    <script src="../static/js/bootstrap.min.js"> </script>#}
+
+</body>
+
+</html>
+
+<script>
+    $(document).ready(function() {
+        {#alert("index ready .. ");#}
+    });
+
+</script>
