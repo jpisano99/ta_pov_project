@@ -91,6 +91,7 @@ def ajax_test():
 @app.route('/', methods=['GET', 'POST'])
 def login():
     print ("request is a",request.method)
+    print ("Looking for: ",url_for('static',filename='images/ta_logo.png'))
     if request.method == 'POST':
         session.pop('user', None)
 
