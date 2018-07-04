@@ -18,14 +18,6 @@ def index():
     return render_template('index.html',pov_count=pov_count,sheet_dict=sheet_dict)
 
 
-# @app.route('/login',methods=['GET','POST'])
-# def login():
-#     if request.method == 'POST':
-#         print ('User: ',request.form['inputEmail'])
-#         print('Password: ',request.form['inputPassword'])
-#     return render_template('login.html')
-
-
 @app.route('/update_ss')
 def update_ss():
     sheet_name = 'POV BOT Status'

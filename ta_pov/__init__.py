@@ -23,14 +23,14 @@ db_config = dict(
     DATABASE = "povbot",
     USER     = "smartsheet",
     PASSWORD = my_secrets.passwords["DB_PASSWORD"],
-    HOST     = "tet-pov-bot.cdo0mbvpds6n.us-east-2.rds.amazonaws.com"
-)
+    HOST     = "tetration-pov.csomwukitvqz.us-east-2.rds.amazonaws.com"
+    )
+
 
 # Smartsheet Config settings
 ss_config = dict(
     SS_TOKEN = my_secrets.passwords["SS_TOKEN"]
-)
-
+    )
 
 #
 # Various MySql Connectors
@@ -49,11 +49,12 @@ ss_config = dict(
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:' + database['PASSWORD'] + '@overlook-mountain.com:12498/cust_ref_db'
 
 # Local connect to RaspPi (Stan)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://'+\
-                                            db_config['USER']+\
-                                        ':'+db_config['PASSWORD']+\
-                                        '@'+db_config['HOST']+':3306/'+\
-                                            db_config['DATABASE']
+connect_str = 'mysql+pymysql://'+\
+                    db_config['USER']+\
+                ':'+db_config['PASSWORD']+\
+                '@'+db_config['HOST']+':3306/'+\
+                    db_config['DATABASE']
+app.config['SQLALCHEMY_DATABASE_URI'] = connect_str
 
 #
 # Create db for SQL Alchemy
