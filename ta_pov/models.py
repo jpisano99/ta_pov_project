@@ -22,6 +22,7 @@ class ta_povs(db.Model):
     workspaces_created = db.Column(db.Integer)
     start_date = db.Column(db.DateTime)
     end_date = db.Column(db.DateTime)
+    deleted_date = db.Column(db.DateTime)
     active = db.Column(db.Integer)
     extended = db.Column(db.Integer)
     deleted = db.Column(db.Integer)
