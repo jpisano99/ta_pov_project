@@ -31,9 +31,7 @@ class ta_povs(db.Model):
         return ta_povs.query.order_by(ta_povs.company_name).limit(num)
 
     def __repr__(self):
-       return "<name {}: '{} , {}'>".format(self.id, self.cisco_owner,self.company_name)
-
-
+        return "{},{},{}".format(self.id, self.cisco_owner, self.company_name)
 
 class Coverage(db.Model):
     id = db.Column(db.Integer, primary_key=True)

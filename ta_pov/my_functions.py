@@ -36,6 +36,9 @@ def create_sheet(sheet_name):
         # else create they type of SS column we need (TEXT_NUMBER,DATE,CHECKBOX etc)
         if col.Type == 'datetime':
             new_col_list.append({'title': col.Field, 'primary': primary_col, 'type': 'DATE'})
+        elif col.Field == 'deleted':
+            print ('i found deleted')
+            new_col_list.append({'title': col.Field, 'primary': primary_col,'type': 'PICKLIST','options':['Yes','No']})
         else:
             new_col_list.append({'title': col.Field, 'primary': primary_col, 'type': 'TEXT_NUMBER'})
 
@@ -121,20 +124,18 @@ def sheet_details(sheet_name):
     return sheet_dict
 
 if __name__ == "__main__":
-    pass
-
     sheet_name = 'POV BOT Status'
     # # Get existing sheet info (if any)
     sheet_dict = sheet_details(sheet_name)
-    print(sheet_dict['sheet_url'])
+    #print(sheet_dict['sheet_url'])
 
-    #
-    # # Delete existing sheet_name
-    # delete_sheet(sheet_dict)
-    #
-    # # Recreate sheet and create new dict
-    # create_sheet(sheet_name)
-    # sheet_dict = sheet_details(sheet_name)
+
+    # Delete existing sheet_name
+    delete_sheet(sheet_dict)
+
+    # Recreate sheet and create new dict
+    create_sheet(sheet_name)
+    sheet_dict = sheet_details(sheet_name)
     #
     # # Add new rows
     # add_rows(sheet_dict)
