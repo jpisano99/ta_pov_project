@@ -11,87 +11,161 @@ ss_config = dict(
     SS_TOKEN = my_secrets.passwords["SS_TOKEN"]
 )
 
-def delete_sheet(sheet_dict):
-    ss_token=ss_config['SS_TOKEN']
-    ss = smartsheet.Smartsheet(ss_token)
 
-    if sheet_dict['sheet_id'] != 'Not Found':
-        sheet_id = sheet_dict['sheet_id']
-        response = ss.Sheets.delete_sheet(sheet_id)       # sheet_id
+def delete_sheet(my_ss_model):
+    ss = my_ss_model.ss
+
+    if my_ss_model.sheet_id != 'None':
+        response = ss.Sheets.delete_sheet(my_ss_model.sheet_id)
+
+    return
 
 
-def create_sheet(sheet_name):
-    ss_token=ss_config['SS_TOKEN']
-    ss = smartsheet.Smartsheet(ss_token)
+def create_sheet(my_ss_model):
+    ss = my_ss_model.ss
+    sheet_name = my_ss_model.sheet_name
+    my_sheet_build = []  # List of SS API formatted columns
+    my_col_details = []  # List of (col_id,SQL col nam,SS col name, Data Type)
 
-    # # Run a Query to get the col names
-    sql= "SHOW COLUMNS FROM povbot.tblPovs "
-    cols = db.engine.execute(sql)
+    for x in my_ss_model:
+        my_col_details.append(('', x[0], x[1], x[3]))
 
-    new_col_list=[]
-    primary_col = True
-
-    for col in cols:
-        # If this column is first make it the required SS primary column
-        # else create they type of SS column we need (TEXT_NUMBER,DATE,CHECKBOX etc)
-        if col.Type == 'datetime':
-            new_col_list.append({'title': col.Field, 'primary': primary_col, 'type': 'DATE'})
-        elif col.Field == 'deleted':
-            print ('i found deleted')
-            new_col_list.append({'title': col.Field, 'primary': primary_col,'type': 'PICKLIST','options':['Yes','No']})
+        # Create each column record for SS from the SS_Model object
+        # Adjust accordingly if the 'option' property exists
+        if x[4] == '':
+            my_sheet_build.append({'title': x[1], 'primary': x[2], 'type': x[3]})
         else:
-            new_col_list.append({'title': col.Field, 'primary': primary_col, 'type': 'TEXT_NUMBER'})
+            my_sheet_build.append({'title': x[1], 'primary': x[2], 'type': x[3], 'options': x[4]})
 
-        primary_col = False
-
-    sheet_spec = ss.models.Sheet({'name': sheet_name, 'columns': new_col_list})
+    # All columns are now defined
+    # Send off to Smartsheets to create the sheet
+    sheet_spec = ss.models.Sheet({'name': sheet_name, 'columns': my_sheet_build})
     response = ss.Home.create_sheet(sheet_spec)
 
-def add_rows(sheet_dict):
-    ss_token=ss_config['SS_TOKEN']
-    ss = smartsheet.Smartsheet(ss_token)
+    # Did we create successfully ?
+    print("Response: ", response.message)
 
-    sheet_id= sheet_dict['sheet_id']   # "test" Sheet ID
-    col_count = sheet_dict['col_count']
+    # Create a dict of the response data
+    response_dict = response.to_dict()
 
-    # Build the SQL query from tblPovs
-    povs = ta_povs.query.order_by(ta_povs.company_name).all()
-
-    for pov in povs:
-        row_next = ss.models.Row()
-        row_next.to_top = True
-
-        for x in range(1, col_count+1):
-            col_id_key = 'col_id_' + str(x)
-            col_name_key = 'col_name_' + str(x)
-
-            col_id = sheet_dict[col_id_key]
-            col_name = sheet_dict[col_name_key]
-            row_value = eval("pov."+col_name)
-
-            # Change None type to something else
-            if row_value is None:
-                row_value = ""
-
-            # Change datetime to string
-            if isinstance(row_value, datetime):
-                row_value = row_value.strftime("%A, %d. %B %Y %I:%M%p")
-
-            row_dict = { 'column_id':col_id ,'value': row_value, 'strict': False}
-            row_next.cells.append(row_dict)
-
-        response = ss.Sheets.add_rows(sheet_id, [row_next])
-
-    # DEBUG CODE - DO NOT DELETE
-    # print("Response: ",response.message)
-    # resp_dict = response.to_dict()
+    # RESPONSE DEBUG CODE - DO NOT DELETE
     # print(json.dumps(resp_dict, indent=2))
     # exit()
 
-def sheet_details(sheet_name):
-    ss_token=ss_config['SS_TOKEN']
-    ss = smartsheet.Smartsheet(ss_token)
-    sheet_dict = {}
+    # Retrieve the sheet id & sheet url from the 'result' dict of the SS response
+    result_dict = response_dict.get('result', {})
+    sheet_id = result_dict['id']
+    sheet_url = result_dict['permalink']
+
+    # Retrieve each SS column 'id' from the 'columns' dict of the SS response
+    col_data_dict = response_dict.get('result', {}).get('columns', {})
+
+    # Crete a dict to lookup SS col ids by SS col_name (SS_column_name:SS_column_id)
+    col_id_lookup = {}
+
+    for col_record in col_data_dict:
+        col_id_lookup[col_record['title']] = col_record['id']
+
+    # print ('Col id and names', col_id_lookup)
+
+    # Add SS col ids to the my_col_details list
+    # Build by using a tmp_list to insert the cold ids
+    tmp_list = []
+    for x in my_col_details:
+        # Use the Smartsheet col name x[2] to look up the col id
+        # Update the my_col_details list to include col id
+        col_id = col_id_lookup[x[2]]
+        tmp_list.append((col_id, x[1], x[2], x[3]))
+
+    my_col_details = tmp_list
+
+    # my_col_details now has everything we need to Add Rows
+    my_ss_model.my_col_details = my_col_details
+
+    return
+
+
+def add_rows(my_ss_model):
+    ss = my_ss_model.ss
+    my_col_details = my_ss_model.my_col_details
+    sheet_id = my_ss_model.sheet_id
+
+    # Get the MySQL data
+    #
+    my_ss_model.load_sql()
+
+    # loop over each MySql POV record
+    for pov in my_ss_model.povs:
+        row_next = ss.models.Row()
+        pov_status = ''
+        row_next.to_top = True
+        if pov.active == 1 and pov.extended == 1:
+            pov_status = 'Active - Extended'
+        elif pov.active == 1:
+            pov_status = 'Active'
+        elif pov.deleted == 1:
+            pov_status = 'Deleted'
+
+        # Loop Across all columns in this row
+        for x in my_col_details:
+            col_id = x[0]
+            col_sql_name = x[1]
+            col_ss_name = x[2]
+            col_type = x[3]
+            row_value = eval("pov." + col_sql_name)
+
+            # Change None type to something else since SS will throw
+            # a error on a 'None' row value
+            if row_value is None:
+                row_value = ""
+
+            # # Set value for a PICKLIST to Yes or No
+
+            if col_ss_name == 'Active':
+                row_value = pov_status
+
+            # Change datetime to string
+            if isinstance(row_value, datetime):
+                row_value = row_value.strftime("%m/%d/%y")
+
+            row_dict = {'column_id': col_id, 'value': row_value, 'strict': False}
+            row_next.cells.append(row_dict)
+
+
+        response = ss.Sheets.add_rows(sheet_id, [row_next])
+        resp_dict = response.to_dict()
+
+    #
+    #  Clean up and do some formatting
+    #
+
+    # Delete columns extended & deleted
+    for x in my_col_details:
+        if x[2] == 'Extended':
+            col_id = x[0]
+    ss.Sheets.delete_column(sheet_id, col_id)
+
+    for x in my_col_details:
+        if x[2] == 'Deleted':
+            col_id = x[0]
+    ss.Sheets.delete_column(sheet_id, col_id)
+
+    # Rename Active to POV Status
+    for x in my_col_details:
+        if x[2] == 'Active':
+            col_id = x[0]
+            col_name = x[2]
+    col_spec = ss.models.Column({'title': 'POV Status'})
+    response = ss.Sheets.update_column(sheet_id, col_id, col_spec)
+
+    # Apply Formatting
+    return
+
+
+def sheet_details(my_ss_model):
+    ss = my_ss_model.ss
+    sheet_name = my_ss_model.sheet_name
+    my_ss_model.sheet_id = 'None'
 
     # Find my Sheet ID
     response = ss.Sheets.list_sheets(include_all=True)
@@ -99,43 +173,30 @@ def sheet_details(sheet_name):
 
     for sheet in sheets:
         if sheet.name == sheet_name:
-            sheet_dict['sheet_name'] = sheet.name
-            sheet_dict['sheet_id'] = sheet.id
+            my_ss_model.sheet_id = sheet.id
+            my_ss_model.sheet_url = sheet.permalink
+            my_ss_model.total_rows = sheet.total_row_count
+            my_ss_model.last_modified = sheet.modified_at.astimezone(pytz.timezone('US/Eastern'))
 
-    # If we found "sheet_name" find columns
-    if 'sheet_id' in sheet_dict.keys():
-        sheet = ss.Sheets.get_sheet(sheet_dict['sheet_id'])
-        sheet_dict['row_count'] = sheet.total_row_count
-        sheet_dict['sheet_url']= sheet.permalink
-        sheet_dict['modified_at'] = sheet.modified_at.astimezone(pytz.timezone('US/Eastern'))
+    return
 
-        columns = sheet.columns
-
-        col_cnt = 1
-        for column in columns:
-            #print(sheet_dict['sheet_name'], column.title, column.id)
-            sheet_dict['col_name_'+str(col_cnt)] = column.title
-            sheet_dict['col_id_'+str(col_cnt)] = column.id
-            sheet_dict['col_count']=(col_cnt)
-            col_cnt += 1
-    else:
-        sheet_dict['sheet_id'] = "Not Found"
-
-    return sheet_dict
 
 if __name__ == "__main__":
-    sheet_name = 'POV BOT Status'
+    # Build the Sheet
+    my_ss_model = SS_Model()
+    my_ss_model.sheet_name = 'POV BOT Status'
+
     # # Get existing sheet info (if any)
-    sheet_dict = sheet_details(sheet_name)
-    #print(sheet_dict['sheet_url'])
+    sheet_details(my_ss_model)
 
+    # Delete existing sheet_name (if any)
+    delete_sheet(my_ss_model)
 
-    # Delete existing sheet_name
-    delete_sheet(sheet_dict)
+    # Recreate sheet and get new sheet details
+    create_sheet(my_ss_model)
+    sheet_details(my_ss_model)
 
-    # Recreate sheet and create new dict
-    create_sheet(sheet_name)
-    sheet_dict = sheet_details(sheet_name)
-    #
     # # Add new rows
-    # add_rows(sheet_dict)
+    add_rows(my_ss_model)
+
+

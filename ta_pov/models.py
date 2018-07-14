@@ -1,4 +1,10 @@
 from ta_pov import db
+from ta_pov import my_secrets
+import smartsheet
+# Smartsheet Config settings
+ss_config = dict(
+    SS_TOKEN = my_secrets.passwords["SS_TOKEN"]
+)
 
 class ta_povs(db.Model):
     __tablename__ = 'tblPovs'
@@ -33,59 +39,47 @@ class ta_povs(db.Model):
     def __repr__(self):
         return "{},{},{}".format(self.id, self.cisco_owner, self.company_name)
 
-class Coverage(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    pss_name = db.Column(db.String(30))
-    tsa_name = db.Column(db.String(30))
-    sales_level_1 = db.Column(db.String(30))
-    sales_level_2 = db.Column(db.String(30))
-    sales_level_3 = db.Column(db.String(30))
-    sales_level_4 = db.Column(db.String(30))
-    sales_level_5 = db.Column(db.String(30))
-    fiscal_year = db.Column(db.String(30))
 
-    @staticmethod
-    def newest():
-        return Coverage.query.order_by(Coverage.pss_name).all()
+class SS_Model:
 
-    def get_page(page_num):
-        num_of_pages = Coverage.query.paginate(per_page=10)
-        return Coverage.query.order_by(Coverage.id).offset(page_num*10)
+    def __init__(self):
+        ss_token = ss_config['SS_TOKEN']
+        self.index = -1
+        self.povs = ''
+        self.ss_token = ''
+        self.sheet_name = ''
+        self.sheet_id = ''
+        self.sheet_url = ''
+        self.last_modified = ''
+        self.total_rows = ''
+        self.my_col_details = ''
+        self.ss = smartsheet.Smartsheet(ss_token)
+        self.sql_to_ss = [['id', 'POV ID', True, 'TEXT_NUMBER', ''],
+                    ['cisco_owner_name', 'POV Owner Name', False, 'TEXT_NUMBER', ''],
+                    ['company_name', 'Customer Name', False, 'TEXT_NUMBER', ''],
+                    ['start_date', 'Start Date', False, 'DATE', ''],
+                    ['end_date', 'End Date', False, 'DATE', ''],
+                    ['customer_first_name', 'Customer First Name', False, 'TEXT_NUMBER', ''],
+                    ['customer_last_name', 'Customer Last Name', False, 'TEXT_NUMBER', ''],
+                    ['customer_email', 'Customer Email', False, 'TEXT_NUMBER', ''],
+                    ['cisco_owner', 'POV Owner Email', False, 'TEXT_NUMBER', ''],
+                    ['tenant_name', 'Tenant Name', False, 'TEXT_NUMBER', ''],
+                    ['deleted_date', 'Deleted Date', False, 'DATE', ''],
+                    ['active', 'Active',False, 'PICKLIST', ['Active', 'Active - Extended', 'Deleted']],
+                    ['extended', 'Extended', False, 'PICKLIST',['Yes', 'No']],
+                    ['deleted', 'Deleted', False, 'PICKLIST', ['Yes', 'No']]]
 
-    def newest_name(num):
-        return Coverage.query.order_by(Coverage.pss_name).limit(num)
+    def load_sql(self):
+        # Build the SQL query from tblPovs
+        self.povs = ta_povs.query.order_by(ta_povs.company_name).all()
+        print('Data Loaded!')
+        return
 
-    # def get_pss(find_pss):
-    #     print("looking for" ,find_pss)
-    #     return Coverage.query.filter(Coverage.id==2)
+    def __iter__(self):
+        return self
 
-    def __repr__(self):
-       return "<name {}: '{} , {}'>".format(self.id, self.pss_name,self.tsa_name)
-
-class Managers(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    last_name = db.Column(db.String(45))
-    first_name = db.Column(db.String(45))
-    segment = db.Column(db.String(45))
-
-    @staticmethod
-    def newest():
-        return Managers.query.order_by(Managers.last_name).all()
-
-    def __repr__(self):
-       return "<name {}: '{} , {}'>".format(self.id, self.last_name,self.first_name,self.segment)
-
-class sales_levels(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    Sales_Level_1 = db.Column(db.String(30))
-    Sales_Level_2 = db.Column(db.String(30))
-    Sales_Level_3 = db.Column(db.String(30))
-    Sales_Level_4 = db.Column(db.String(30))
-    Sales_Level_5 = db.Column(db.String(30))
-
-    # @staticmethod
-    # def newest():
-    #     return Managers.query.order_by(Managers.last_name).all()
-
-    # def __repr__(self):
-    #    return "<name {}: '{} , {}'>".format(sel
+    def __next__(self):
+        self.index += 1
+        if self.index == len(self.sql_to_ss):
+            raise StopIteration
+        return self.sql_to_ss[self.index]
