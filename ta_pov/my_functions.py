@@ -37,13 +37,15 @@ def create_sheet(my_ss_model):
         else:
             my_sheet_build.append({'title': x[1], 'primary': x[2], 'type': x[3], 'options': x[4]})
 
+    # my_sheet_build.append({'title': 'POV Days', 'primary': False, 'type': 'TEXT_NUMBER', 'formula': '=[End Date] - [Start Date]'})
+
     # All columns are now defined
     # Send off to Smartsheets to create the sheet
     sheet_spec = ss.models.Sheet({'name': sheet_name, 'columns': my_sheet_build})
     response = ss.Home.create_sheet(sheet_spec)
 
     # Did we create successfully ?
-    print("Response: ", response.message)
+    print("Sheet Creation: ", response.message)
 
     # Create a dict of the response data
     response_dict = response.to_dict()
@@ -65,8 +67,6 @@ def create_sheet(my_ss_model):
 
     for col_record in col_data_dict:
         col_id_lookup[col_record['title']] = col_record['id']
-
-    # print ('Col id and names', col_id_lookup)
 
     # Add SS col ids to the my_col_details list
     # Build by using a tmp_list to insert the cold ids
@@ -99,6 +99,13 @@ def add_rows(my_ss_model):
         row_next = ss.models.Row()
         pov_status = ''
         row_next.to_top = True
+
+        # Calculate the number of POV days
+        pov_days = str(pov.end_date -  pov.start_date)
+        pov_days = pov_days[:pov_days.find('d')]
+        print ('pov days',pov_days)
+
+        # Create the POV Status tag
         if pov.active == 1 and pov.extended == 1:
             pov_status = 'Active - Extended'
         elif pov.active == 1:
@@ -112,14 +119,17 @@ def add_rows(my_ss_model):
             col_sql_name = x[1]
             col_ss_name = x[2]
             col_type = x[3]
-            row_value = eval("pov." + col_sql_name)
 
+            if col_sql_name == 'CALCULATED':
+                row_value = pov_days
+            else:
+                row_value = eval("pov." + col_sql_name)
+
+            print (col_sql_name,row_value,type(row_value))
             # Change None type to something else since SS will throw
             # a error on a 'None' row value
             if row_value is None:
                 row_value = ""
-
-            # # Set value for a PICKLIST to Yes or No
 
             if col_ss_name == 'Active':
                 row_value = pov_status
@@ -128,11 +138,12 @@ def add_rows(my_ss_model):
             if isinstance(row_value, datetime):
                 row_value = row_value.strftime("%m/%d/%y")
 
+
             row_dict = {'column_id': col_id, 'value': row_value, 'strict': False}
             row_next.cells.append(row_dict)
 
-
         response = ss.Sheets.add_rows(sheet_id, [row_next])
+
         resp_dict = response.to_dict()
 
     #
@@ -154,7 +165,7 @@ def add_rows(my_ss_model):
     for x in my_col_details:
         if x[2] == 'Active':
             col_id = x[0]
-            col_name = x[2]
+
     col_spec = ss.models.Column({'title': 'POV Status'})
     response = ss.Sheets.update_column(sheet_id, col_id, col_spec)
 
@@ -184,10 +195,21 @@ def sheet_details(my_ss_model):
 if __name__ == "__main__":
     # Build the Sheet
     my_ss_model = SS_Model()
-    my_ss_model.sheet_name = 'POV BOT Status'
+    my_ss_model.sheet_name = 'POV BOT Status-Test'
 
     # # Get existing sheet info (if any)
     sheet_details(my_ss_model)
+
+##
+    #ss = my_ss_model.ss
+    #sheet = ss.Sheets.get_sheet(my_ss_model.sheet_id)
+    # Create a dict of the response data
+    #response_dict = sheet.to_dict()
+
+    # RESPONSE DEBUG CODE - DO NOT DELETE
+    #print(json.dumps(response_dict, indent=2))
+    # exit()
+###
 
     # Delete existing sheet_name (if any)
     delete_sheet(my_ss_model)

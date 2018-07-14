@@ -19,11 +19,15 @@ class ta_povs(db.Model):
     tenant_name = db.Column(db.String(45))
     vrf_id = db.Column(db.Integer)
     root_scope_id = db.Column(db.String(100))
-    windows_sensors_deployed = db.Column(db.Integer)
-    linux_sensors_deployed = db.Column(db.Integer)
-    enforcement_sensors_deployed = db.Column(db.Integer)
-    erspan_sensors_deployed = db.Column(db.Integer)
-    netflow_sensors_deployed = db.Column(db.Integer)
+    total_sensors = db.Column(db.Integer)
+    windows_sensors = db.Column(db.Integer)
+    linux_sensors = db.Column(db.Integer)
+    enforcement_sensors = db.Column(db.Integer)
+    erspan_sensors = db.Column(db.Integer)
+    netflow_sensors = db.Column(db.Integer)
+    f5_sensors = db.Column(db.Integer)
+    netscaler_sensors = db.Column(db.Integer)
+    aws_sensors = db.Column(db.Integer)
     scopes_created = db.Column(db.Integer)
     workspaces_created = db.Column(db.Integer)
     start_date = db.Column(db.DateTime)
@@ -59,6 +63,7 @@ class SS_Model:
                     ['company_name', 'Customer Name', False, 'TEXT_NUMBER', ''],
                     ['start_date', 'Start Date', False, 'DATE', ''],
                     ['end_date', 'End Date', False, 'DATE', ''],
+                    ['CALCULATED', 'POV Days', False, 'TEXT_NUMBER', ''],
                     ['customer_first_name', 'Customer First Name', False, 'TEXT_NUMBER', ''],
                     ['customer_last_name', 'Customer Last Name', False, 'TEXT_NUMBER', ''],
                     ['customer_email', 'Customer Email', False, 'TEXT_NUMBER', ''],
