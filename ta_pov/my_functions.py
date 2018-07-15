@@ -84,14 +84,12 @@ def create_sheet(my_ss_model):
 
     return
 
-
 def add_rows(my_ss_model):
     ss = my_ss_model.ss
     my_col_details = my_ss_model.my_col_details
     sheet_id = my_ss_model.sheet_id
 
     # Get the MySQL data
-    #
     my_ss_model.load_sql()
 
     # loop over each MySql POV record
@@ -103,7 +101,6 @@ def add_rows(my_ss_model):
         # Calculate the number of POV days
         pov_days = str(pov.end_date -  pov.start_date)
         pov_days = pov_days[:pov_days.find('d')]
-        print ('pov days',pov_days)
 
         # Create the POV Status tag
         if pov.active == 1 and pov.extended == 1:
@@ -125,7 +122,7 @@ def add_rows(my_ss_model):
             else:
                 row_value = eval("pov." + col_sql_name)
 
-            print (col_sql_name,row_value,type(row_value))
+            # print (col_sql_name,row_value,type(row_value))
             # Change None type to something else since SS will throw
             # a error on a 'None' row value
             if row_value is None:
@@ -138,13 +135,11 @@ def add_rows(my_ss_model):
             if isinstance(row_value, datetime):
                 row_value = row_value.strftime("%m/%d/%y")
 
-
+            # Apply some row level formatting
             row_dict = {'column_id': col_id, 'value': row_value, 'strict': False}
             row_next.cells.append(row_dict)
 
         response = ss.Sheets.add_rows(sheet_id, [row_next])
-
-        resp_dict = response.to_dict()
 
     #
     #  Clean up and do some formatting
@@ -169,7 +164,31 @@ def add_rows(my_ss_model):
     col_spec = ss.models.Column({'title': 'POV Status'})
     response = ss.Sheets.update_column(sheet_id, col_id, col_spec)
 
-    # Apply Formatting
+    # Create a new blank POV Update from the Template
+    new_sheet_name = 'Tetration POV On-Demand POV Status'
+    template_name = 'Tetration On-Demand POV Status-Template'
+    template_id = 6937344860284804  # TA POV Template ID
+    response = ss.Home.create_sheet_from_template(
+        ss.models.Sheet({'name': new_sheet_name, 'from_id': template_id}))
+    new_sheet = response.result
+    new_sheet_id = new_sheet.id
+
+    bot_update_id = my_ss_model.sheet_id  # Working POV BOT sheet
+
+    # Gather all the row id's from the working file
+    # Then Copy them over to the final sheet
+    bot_update_rows = []
+    sheet = ss.Sheets.get_sheet(bot_update_id)
+    for row in sheet.rows:
+        bot_update_rows.append(row.id)
+
+    response = ss.Sheets.copy_rows(
+        bot_update_id,  # sheet_id of rows to be copied
+        ss.models.CopyOrMoveRowDirective({
+            'row_ids': bot_update_rows,
+            'to': ss.models.CopyOrMoveRowDestination({
+                'sheet_id': new_sheet_id})}))
+
     return
 
 
@@ -195,21 +214,10 @@ def sheet_details(my_ss_model):
 if __name__ == "__main__":
     # Build the Sheet
     my_ss_model = SS_Model()
-    my_ss_model.sheet_name = 'POV BOT Status-Test'
+    my_ss_model.sheet_name = 'JIMs POV BOT Update'
 
     # # Get existing sheet info (if any)
     sheet_details(my_ss_model)
-
-##
-    #ss = my_ss_model.ss
-    #sheet = ss.Sheets.get_sheet(my_ss_model.sheet_id)
-    # Create a dict of the response data
-    #response_dict = sheet.to_dict()
-
-    # RESPONSE DEBUG CODE - DO NOT DELETE
-    #print(json.dumps(response_dict, indent=2))
-    # exit()
-###
 
     # Delete existing sheet_name (if any)
     delete_sheet(my_ss_model)
