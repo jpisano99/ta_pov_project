@@ -18,6 +18,9 @@ def delete_sheet(my_ss_model):
     if my_ss_model.sheet_id != 'None':
         response = ss.Sheets.delete_sheet(my_ss_model.sheet_id)
 
+    if my_ss_model.new_sheet_id != 'None':
+        response = ss.Sheets.delete_sheet(my_ss_model.new_sheet_id)
+
     return
 
 
@@ -36,8 +39,6 @@ def create_sheet(my_ss_model):
             my_sheet_build.append({'title': x[1], 'primary': x[2], 'type': x[3]})
         else:
             my_sheet_build.append({'title': x[1], 'primary': x[2], 'type': x[3], 'options': x[4]})
-
-    # my_sheet_build.append({'title': 'POV Days', 'primary': False, 'type': 'TEXT_NUMBER', 'formula': '=[End Date] - [Start Date]'})
 
     # All columns are now defined
     # Send off to Smartsheets to create the sheet
@@ -166,8 +167,7 @@ def add_rows(my_ss_model):
 
     # Create a new blank POV Update from the Template
     new_sheet_name = 'Tetration POV On-Demand POV Status'
-    template_name = 'Tetration On-Demand POV Status-Template'
-    template_id = 6937344860284804  # TA POV Template ID
+    template_id = my_ss_model.template_id
     response = ss.Home.create_sheet_from_template(
         ss.models.Sheet({'name': new_sheet_name, 'from_id': template_id}))
     new_sheet = response.result
@@ -194,19 +194,30 @@ def add_rows(my_ss_model):
 
 def sheet_details(my_ss_model):
     ss = my_ss_model.ss
-    sheet_name = my_ss_model.sheet_name
     my_ss_model.sheet_id = 'None'
+    my_ss_model.template_id = 'None'
+    my_ss_model.new_sheet_id = 'None'
 
     # Find my Sheet ID
     response = ss.Sheets.list_sheets(include_all=True)
     sheets = response.data
 
     for sheet in sheets:
-        if sheet.name == sheet_name:
+        if sheet.name == my_ss_model.new_sheet_name:
+            my_ss_model.new_sheet_id = sheet.id
+
+        if sheet.name == my_ss_model.new_sheet_name:
             my_ss_model.sheet_id = sheet.id
             my_ss_model.sheet_url = sheet.permalink
             my_ss_model.total_rows = sheet.total_row_count
             my_ss_model.last_modified = sheet.modified_at.astimezone(pytz.timezone('US/Eastern'))
+
+    # Look for the Template ID
+    response = ss.Templates.list_user_created_templates()
+    templates = response.data
+    for template in templates:
+        if template.name == my_ss_model.template_name:
+            my_ss_model.template_id = template.id
 
     return
 
@@ -215,13 +226,20 @@ if __name__ == "__main__":
     # Build the Sheet
     my_ss_model = SS_Model()
     my_ss_model.sheet_name = 'POV BOT Update'
+    my_ss_model.new_sheet_name = 'Tetration POV On-Demand POV Status'
+    my_ss_model.template_name = 'Tetration On-Demand POV Status-Template'
 
     # # Get existing sheet info (if any)
     sheet_details(my_ss_model)
 
+
+
     # Delete existing sheet_name (if any)
     delete_sheet(my_ss_model)
-
+    print(my_ss_model.sheet_id)
+    print(my_ss_model.new_sheet_id)
+    print(my_ss_model.template_name,my_ss_model.template_id)
+    exit()
     # Recreate sheet and get new sheet details
     create_sheet(my_ss_model)
     sheet_details(my_ss_model)
