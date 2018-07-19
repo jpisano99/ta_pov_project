@@ -77,7 +77,7 @@ def update_pov_sheet(sheet_id, col_id, customer_list):
 
 
 if __name__ == "__main__":
-    # Get the customers from the segment forecast sheet
+    # Get the customers from the segment forecast sheet.
     sheet_name = 'US Commercial Tetration Forecast'
     col_name = 'Customer'
     sheet_id = get_sheet_id(sheet_name)
