@@ -165,7 +165,7 @@ def add_rows(my_ss_model):
     response = ss.Sheets.update_column(sheet_id, col_id, col_spec)
 
     # Create a new blank POV Update from the Template
-    new_sheet_name = 'Tetration POV On-Demand POV Status'
+    new_sheet_name = 'Tetration On-Demand POV Status'
     template_name = 'Tetration On-Demand POV Status-Template'
     template_id = 6937344860284804  # TA POV Template ID
     response = ss.Home.create_sheet_from_template(
@@ -214,7 +214,7 @@ def sheet_details(my_ss_model):
 if __name__ == "__main__":
     # Build the Sheet
     my_ss_model = SS_Model()
-    my_ss_model.sheet_name = 'POV BOT Update'
+    my_ss_model.sheet_name = 'Tetration POV Raw BOT Data'
 
     # # Get existing sheet info (if any)
     sheet_details(my_ss_model)

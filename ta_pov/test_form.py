@@ -60,6 +60,7 @@ def get_customer_list(sheet, customer_col_id):
 
     # Sort the Customer List
     customer_list.sort()
+    customer_list.insert(0, 'Unforecasted Deal')
     return (customer_list)
 
 
