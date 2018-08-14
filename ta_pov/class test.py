@@ -56,19 +56,8 @@ class Ssheet():
         ss_del_column(self.ss, self.sheet['id'], del_cols)
         return
 
-    def mod_cell(self, row_id, col_id, new_val):
-        ss_mod_cell(self.ss, self.sheet['id'], row_id, col_id, new_val)
-        # jim = {
-        #     "id": row_id,
-        #     "sheetId": self.sheet['id'],
-        #     "rowNumber": 1,
-        #     "expanded": True,}
-        #
-        # cell = [{
-        #         "columnType": "TEXT_NUMBER",
-        #         "value": new_val,
-        #         "displayValue": new_val,
-        #         "columnId": col_id}]
+    def mod_cell(self, col_id, my_row_dict):
+        ss_mod_cell(self.ss, self.sheet['id'], col_id, my_row_dict)
         return
 
     # def __iter__(self):
@@ -114,33 +103,33 @@ if __name__ == "__main__":
         # my_ss.del_cols(my_col_id)
         # my_ss.refresh()
 
-    # Add Rows Example
-    my_col_id = my_ss.col_dict['cisco_owner_name']
-    my_col1_id = my_ss.col_dict['cisco_owner']
-
-    cell_data = []
-    my_rows = []
-    cell_data.append({
-        'column_id': my_col_id,
-        'value': 'blanche',
-        'strict': False})
-    cell_data.append({
-        'column_id': my_col1_id,
-        'value': 'stan',
-        'strict': False})
-    my_rows.append(cell_data)
-
-    cell_data = []
-    cell_data.append({
-        'column_id': my_col1_id,
-        'value': 'blanche',
-        'strict': False})
-    my_rows.append(cell_data)
-
-    my_ss.add_rows(my_rows)
-    # Call this to update our sheet object
-    my_ss.refresh()
-    print("Added Rows: ", len(my_ss.rows))
+    # # Add Rows Example
+        # my_col_id = my_ss.col_dict['cisco_owner_name']
+        # my_col1_id = my_ss.col_dict['cisco_owner']
+        #
+        # cell_data = []
+        # my_rows = []
+        # cell_data.append({
+        #     'column_id': my_col_id,
+        #     'value': 'blanche',
+        #     'strict': False})
+        # cell_data.append({
+        #     'column_id': my_col1_id,
+        #     'value': 'stan',
+        #     'strict': False})
+        # my_rows.append(cell_data)
+        #
+        # cell_data = []
+        # cell_data.append({
+        #     'column_id': my_col1_id,
+        #     'value': 'blanche',
+        #     'strict': False})
+        # my_rows.append(cell_data)
+        #
+        # my_ss.add_rows(my_rows)
+        # # Call this to update our sheet object
+        # my_ss.refresh()
+        # print("Added Rows: ", len(my_ss.rows))
 
     # Delete Rows Example
         # print("Deleted # of Rows BEFORE: ", len(my_ss.rows))
@@ -150,14 +139,18 @@ if __name__ == "__main__":
         # my_ss.refresh()
         # print("Deleted # of Rows AFTER: ", len(my_ss.rows))
 
-    # RESPONSE DEBUG CODE - DO NOT DELETE
-    # print(json.dumps(my_ss.rows, indent=2))
-
-    print('Found blanche at these ids: ', my_ss.row_lookup('cisco_owner_name', 'blanche'))
-    my_row_id = my_ss.row_lookup('cisco_owner_name', 'new Susanne')
-    my_col_id = my_ss.col_dict['cisco_owner_name']
-    new_val = 'jim'
-    my_ss.mod_cell(my_row_id[0], my_col_id, new_val)
+    # Modify Cells Example
+    my_row_ids = my_ss.row_lookup('cisco_owner_name', 'old blanche')
+    my_col_id = my_ss.col_dict['company_name']
+    new_val = 'stan'
+    my_row_dict = {}
+    for id in my_row_ids:
+        my_row_dict[id] = new_val
+    my_ss.mod_cell(my_col_id, my_row_dict)
+    my_ss.refresh()
 
     exit()
+
+    # RESPONSE DEBUG CODE - DO NOT DELETE
+    # print(json.dumps(my_ss.rows, indent=2))
 
