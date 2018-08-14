@@ -140,9 +140,9 @@ if __name__ == "__main__":
         # print("Deleted # of Rows AFTER: ", len(my_ss.rows))
 
     # Modify Cells Example
-    my_row_ids = my_ss.row_lookup('cisco_owner_name', 'old blanche')
+    my_row_ids = my_ss.row_lookup('cisco_owner_name', 'ang')
     my_col_id = my_ss.col_dict['company_name']
-    new_val = 'stan'
+    new_val = 'client director'
     my_row_dict = {}
     for id in my_row_ids:
         my_row_dict[id] = new_val
