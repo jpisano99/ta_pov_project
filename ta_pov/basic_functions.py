@@ -102,7 +102,23 @@ def ss_add_rows(ss, sheet_id, my_rows):
     return
 
 
-def ss_mod_cell(ss, sheet_id, row_id, col_id, cell_dict):
-    pass
+def ss_mod_cell(ss, sheet_id, row_id, col_id, new_val):
+    # Build new cell value
+    print(sheet_id, row_id, col_id, new_val)
+
+    new_cell = ss.models.Cell()
+    new_cell.column_id = col_id
+    new_cell.value = new_val
+    new_cell.strict = False
+
+    # Build the row to update
+    new_row = ss.models.Row()
+    new_row.id = row_id
+    new_row.cells.append(new_cell)
+
+    # Update rows
+    updated_row = ss.Sheets.update_rows(
+        sheet_id,  # sheet_id
+        [new_row])
     return
 

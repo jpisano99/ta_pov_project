@@ -57,7 +57,18 @@ class Ssheet():
         return
 
     def mod_cell(self, row_id, col_id, new_val):
-        pass
+        ss_mod_cell(self.ss, self.sheet['id'], row_id, col_id, new_val)
+        # jim = {
+        #     "id": row_id,
+        #     "sheetId": self.sheet['id'],
+        #     "rowNumber": 1,
+        #     "expanded": True,}
+        #
+        # cell = [{
+        #         "columnType": "TEXT_NUMBER",
+        #         "value": new_val,
+        #         "displayValue": new_val,
+        #         "columnId": col_id}]
         return
 
     # def __iter__(self):
@@ -143,12 +154,10 @@ if __name__ == "__main__":
     # print(json.dumps(my_ss.rows, indent=2))
 
     print('Found blanche at these ids: ', my_ss.row_lookup('cisco_owner_name', 'blanche'))
-    my_row_id = my_ss.row_lookup('cisco_owner_name', 'blanche')
+    my_row_id = my_ss.row_lookup('cisco_owner_name', 'new Susanne')
     my_col_id = my_ss.col_dict['cisco_owner_name']
     new_val = 'jim'
-    print('Row: ', my_row_id, ' Col: ', my_col_id)
-
-    my_ss.mod_cell(my_row_id, my_col_id, new_val)
+    my_ss.mod_cell(my_row_id[0], my_col_id, new_val)
 
     exit()
 
