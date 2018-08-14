@@ -1,4 +1,4 @@
-def get_sheet(ss, sheet_name):
+def ss_get_sheet(ss, sheet_name):
     # Get Sheet meta-data
     response = ss.Sheets.list_sheets(include_all=True)
     sheets = response.data
@@ -9,7 +9,7 @@ def get_sheet(ss, sheet_name):
     return sheet_info_dict
 
 
-def create_sheet(ss, sheet_name, col_dict):
+def ss_create_sheet(ss, sheet_name, col_dict):
     # All columns are now defined
     # Send off to Smartsheets to create the sheet
     sheet_spec = ss.models.Sheet({'name': sheet_name, 'columns': col_dict})
@@ -20,12 +20,12 @@ def create_sheet(ss, sheet_name, col_dict):
     return sheet_dict
 
 
-def delete_sheet(ss, sheet_id):
+def ss_delete_sheet(ss, sheet_id):
     response = ss.Sheets.delete_sheet(sheet_id)
     return response
 
 
-def get_template(ss, template_name):
+def ss_get_template(ss, template_name):
     # Get template meta-data
     response = ss.Templates.list_user_created_templates()
     templates = response.data
@@ -36,7 +36,7 @@ def get_template(ss, template_name):
     return template_info_dict
 
 
-def get_col_data(ss, sheet_id):
+def ss_get_col_data(ss, sheet_id):
     # Get column data from sheet_id
     tmp = ss.Sheets.get_sheet(sheet_id, include='rowIds')
     sheet_dict = tmp.to_dict()
@@ -44,7 +44,17 @@ def get_col_data(ss, sheet_id):
     return columns
 
 
-def get_row_data(ss, sheet_id):
+def ss_get_col_dict(ss, columns):
+    # Return a dict of {col_name:col_id}
+    col_dict = {}
+    for column in columns:
+        # key = column['title']
+        # value = column['id']
+        col_dict[column['title']] = column['id']
+    return col_dict
+
+
+def ss_get_row_data(ss, sheet_id):
     # Get row data from sheet_id
     tmp = ss.Sheets.get_sheet(sheet_id, include='rowIds')
     sheet_dict = tmp.to_dict()
@@ -52,26 +62,29 @@ def get_row_data(ss, sheet_id):
     return rows
 
 
-def del_column(ss, sheet_id, col_id):
-    pass
+def ss_del_column(ss, sheet_id, my_cols):
+    ss.Sheets.delete_column(sheet_id, my_cols)
     return
 
 
-def add_column(ss, sheet_id, col_id, col_dict):
-    pass
+def ss_add_column(ss, sheet_id, my_cols):
+    # Add columns to the sheet
+    col_list = []
+    for col in my_cols:
+        col_list.append(ss.models.Column(col))
+
+    response = ss.Sheets.add_columns(sheet_id, col_list)
     return
 
 
-def del_row(ss, sheet_id, my_rows):
-    pass
+def ss_del_rows(ss, sheet_id, my_rows):
+    ss.Sheets.delete_rows(sheet_id, my_rows)
     return
 
 
-def add_row(ss, sheet_id, my_rows):
-    #
+def ss_add_rows(ss, sheet_id, my_rows):
     # my_rows is a list of rows to be added
-    # [ [{"strict": false, "columnId": 1, "value": "jim"}] }
-    #
+    # { [{"strict": false, "columnId": 1, "value": "jim"}] }
     rows_to_add = []
     for row in my_rows:
         # Create a row object
@@ -80,7 +93,6 @@ def add_row(ss, sheet_id, my_rows):
         for cell in row:
             # Gather all the cells in __this__ row
             row_next.cells.append(cell)
-            print('row', row_next)
 
         # Add to the list of row objects to send to SS
         rows_to_add.append(row_next)
@@ -90,6 +102,7 @@ def add_row(ss, sheet_id, my_rows):
     return
 
 
-def change_cell(ss, sheet_id, row_id, col_id, cell_dict):
+def ss_mod_cell(ss, sheet_id, row_id, col_id, cell_dict):
     pass
     return
+

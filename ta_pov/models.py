@@ -118,21 +118,25 @@ class SS_Model_r1:
         self.index = -1
         self.povs = ''
         self.ss_token = ''
-        self.raw_data_sheet_name = ''
-        self.raw_data_sheet_id = ''
-        self.raw_data_col_dict = ''
-        self.total_rows = ''
-        self.my_col_details = ''
-        self.template_name = ''
-        self.template_id = ''
-        self.status_sheet_name = ''
-        self.status_sheet_id = ''
-        self.status_sheet_url = ''
-        self.last_modified = ''
+        self.status_sheet = ''
+        self.raw_data_sheet = ''
+        self.template_sheet = ''
+        self.my_col_id_map = ''
+        # self.raw_data_sheet_id = ''
+        # self.raw_data_col_dict = ''
+        # self.total_rows = ''
+        # self.my_col_details = ''
+        # self.template_name = ''
+        # self.template_id = ''
+        # self.status_sheet_name = ''
+        # self.status_sheet_id = ''
+        # self.status_sheet_url = ''
+        # self.last_modified = ''
         self.ss = smartsheet.Smartsheet(ss_token)
         self.sql_to_ss = [['id', 'POV ID', True, 'TEXT_NUMBER', ''],
                     ['cisco_owner_name', 'POV Owner Name', False, 'TEXT_NUMBER', ''],
                     ['company_name', 'Customer Name', False, 'TEXT_NUMBER', ''],
+                    ['LOOKUP', 'Forecast', False, 'TEXT_NUMBER', ''],
                     ['start_date', 'Start Date', False, 'DATE', ''],
                     ['end_date', 'End Date', False, 'DATE', ''],
                     ['CALCULATED', 'POV Days', False, 'TEXT_NUMBER', ''],

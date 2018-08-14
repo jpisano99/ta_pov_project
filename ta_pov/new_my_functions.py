@@ -2,9 +2,11 @@ from ta_pov.models import *
 import smartsheet
 import json
 from datetime import datetime, date, time
+import time
 import pytz
 # Application Passwords kept here
 from ta_pov import my_secrets
+from ta_pov.basic_functions import *
 
 # Smartsheet Config settings
 ss_config = dict(
@@ -12,26 +14,12 @@ ss_config = dict(
 )
 
 
-def delete_sheet(ss_model):
-    ss = ss_model.ss
-
-    if ss_model.raw_data_sheet_id != 'None':
-        response = ss.Sheets.delete_sheet(ss_model.raw_data_sheet_id)
-
-    if ss_model.status_sheet_id != 'None':
-        response = ss.Sheets.delete_sheet(ss_model.status_sheet_id)
-
-    return
-
-def get_sql_data(sheet_name):
-    ss_token=ss_config['SS_TOKEN']
-    ss = smartsheet.Smartsheet(ss_token)
-
+def create_ss_from_sql():
     # # Run a Query to get the col names
     sql= "SHOW COLUMNS FROM povbot.tblPovs "
     cols = db.engine.execute(sql)
 
-    new_col_list=[]
+    new_col_list = []
     primary_col = True
 
     for col in cols:
@@ -44,42 +32,23 @@ def get_sql_data(sheet_name):
 
         primary_col = False
 
-        sheet_spec = ss.models.Sheet({'name': sheet_name, 'columns': new_col_list})
+    return new_col_list
 
-    response = ss.Home.create_sheet(sheet_spec)
-    print('sheet creation ', response.message)
 
-    # Create a dict of the response json data
-    response_dict = response.to_dict()
-
-    # Retrieve the sheet id & sheet url from the 'result' dict of the SS response
-    result_dict = response_dict.get('result', {})
-    sheet_id = result_dict['id']
-    sheet_url = result_dict['permalink']
-
-    # Retrieve each SS column 'id' from the 'columns' dict of the SS response
-    col_data_dict = response_dict.get('result', {}).get('columns', {})
-
-    # Crete a dict and list to lookup SS col ids by SS col_name (SS_column_name:SS_column_id)
-    col_id_dict = {}
-    col_id_list = []
-
-    for col_record in col_data_dict:
-        col_id_dict[col_record['title']] = col_record['id']
-        col_id_list.append((col_record['title'], col_record['id']))
+def load_sql_rows(my_cols):
+    my_rows = []
+    this_row = []
 
     # Retrieve the SQL Data
     povs = ta_povs.query.order_by(ta_povs.company_name).all()
     row_count = 0
 
     for pov in povs:
-        row_next = ss.models.Row()
-        row_next.to_top = True
         row_count += 1
 
-        for column in col_id_list:
-            column_name = column[0]
-            column_id = column[1]
+        for column in my_cols:
+            column_name = column['title']
+            column_id = column['id']
 
             row_value = eval("pov."+column_name)
 
@@ -91,17 +60,50 @@ def get_sql_data(sheet_name):
             if isinstance(row_value, datetime):
                 row_value = row_value.strftime("%A, %d. %B %Y %I:%M%p")
 
-            row_dict = {'column_id':column_id, 'value': row_value, 'strict': False}
-            row_next.cells.append(row_dict)
+            this_row.append({'column_id':column_id, 'value': row_value, 'strict': False})
 
-        response = ss.Sheets.add_rows(sheet_id, [row_next])
+        my_rows.append(this_row)
 
-    print(str(row_count) + ' rows added ', response.message)
-    sql_data_info = {'sheet_id': sheet_id, 'col_id_dict':col_id_dict}
-    return sql_data_info
+        this_row = []
+
+    print('my rows', my_rows)
+    print(len(my_rows))
+    return my_rows
+
+def create_status_cols(my_ss):
+    my_cols = []  # List of SS API formatted columns
+    my_col_id_map = []  # List of (col_id,SQL col nam,SS col name, Data Type)
+
+    # Loop through the SS model and build the new SS
+    for x in my_ss:
+        my_col_id_map.append(['', x[0], x[1], x[3]])
+
+        # Create each column record for SS from the SS_Model object
+        # Adjust accordingly if the 'option' property exists
+        if x[4] == '':
+            my_cols.append({'title': x[1], 'primary': x[2], 'type': x[3]})
+        else:
+            my_cols.append({'title': x[1], 'primary': x[2], 'type': x[3], 'options': x[4]})
+
+    sheet_dict = ss_create_sheet(my_ss.ss, 'Tetration On-Demand POV Status', my_cols)
+
+    # Retrieve each SS column 'id' from the 'columns' dict of the SS response
+    col_data_dict = sheet_dict.get('result', {}).get('columns', {})
+
+    # Update my_col_id_map with the col ids
+    x = 0
+    for col_record in col_data_dict:
+        my_col_id_map[x][0] = col_record['id']
+        x += 1
+
+    my_ss.my_col_id_map = my_col_id_map
+
+    return my_cols
 
 
-def create_status_sheet(ss_model):
+
+
+def create_status_sheet_old(ss_model):
     ss = ss_model.ss
     sheet_name = ss_model.status_sheet_name
     my_sheet_build = []  # List of SS API formatted columns
@@ -145,19 +147,20 @@ def create_status_sheet(ss_model):
     return
 
 
-def add_rows_test(ss_model):
-    ss = ss_model.ss
+def add_rows_test(raw_rows):
+    # ss = ss_model.ss
 
     # Get Raw Data SS rows
-    raw_data_sheet_id = ss_model.raw_data_sheet_id
-    tmp = ss.Sheets.get_sheet(raw_data_sheet_id, include='rowIds')
-    raw_data_sheet_dict = tmp.to_dict()
+    # raw_data_sheet_id = ss_model.raw_data_sheet['id']
 
-    raw_rows = raw_data_sheet_dict.get('rows', {})
-    raw_data_col_dict = ss_model.raw_data_col_dict # dict to loo up col ids
+    # tmp = ss.Sheets.get_sheet(raw_data_sheet_id, include='rowIds')
+    # raw_data_sheet_dict = tmp.to_dict()
+    #
+    # raw_rows = raw_data_sheet_dict.get('rows', {})
+    # raw_data_col_dict = ss_model.raw_data_col_dict # dict to loo up col ids
 
     # Newly created status sheet col-ids
-    my_col_details = ss_model.my_col_details
+    # my_col_details = ss_model.my_col_details
 
     for row in raw_rows:
         cells = row['cells']
@@ -214,7 +217,8 @@ def add_rows_test(ss_model):
 
             # Apply some row level formatting
             row_dict = {'column_id': col_id, 'value': row_value, 'strict': False}
-            row_next.cells.append(row_dict)
+            # row_next.cells.append(row_dict)
+
 
         response = ss.Sheets.add_rows(sheet_id, [row_next])
 
@@ -286,7 +290,7 @@ def add_rows_test(ss_model):
 
 
 
-def create_sheet(my_ss_model):
+def create_sheet_old(my_ss_model):
     ss = my_ss_model.ss
     sheet_name = my_ss_model.raw_data_sheet_name
     my_sheet_build = []  # List of SS API formatted columns
@@ -347,7 +351,7 @@ def create_sheet(my_ss_model):
 
     return
 
-def add_rows(ss_model):
+def add_rows_old(ss_model):
     ss = ss_model.ss
     my_col_details = ss_model.my_col_details
     raw_data_sheet_id = ss_model.raw_data_sheet_id
@@ -489,21 +493,93 @@ def sheet_details(ss_model):
 
 
 if __name__ == "__main__":
+    # Declare my_ss
+    my_ss = SS_Model_r1()
+    
+    # Get Current Sheet Info
+    my_ss.raw_data_sheet = ss_get_sheet(my_ss.ss, 'Tetration On-Demand POV Raw Data')
+    my_ss.status_sheet = ss_get_sheet(my_ss.ss, 'Tetration On-Demand POV Status')
+    my_ss.template_sheet = ss_get_template(my_ss.ss, 'Tetration On-Demand POV Status-Template')
+
+    # Delete any existing sheets (if any)
+    if 'id' in my_ss.raw_data_sheet:
+        ss_delete_sheet(my_ss.ss, my_ss.raw_data_sheet['id'])
+    if 'id' in my_ss.status_sheet:
+        ss_delete_sheet(my_ss.ss, my_ss.status_sheet['id'])
+
+    # Build the columns and create a new raw SS from the SQL Model
+    my_raw_cols = create_ss_from_sql()
+    ss_create_sheet(my_ss.ss, 'Tetration On-Demand POV Raw Data', my_raw_cols)
+
+    # Get the sheet details of the newly created SS for Raw Data
+    my_ss.raw_data_sheet = ss_get_sheet(my_ss.ss, 'Tetration On-Demand POV Raw Data')
+
+    # Get all the col_ids and load the new raw SQL data
+    col_ids  = ss_get_col_data(my_ss.ss, my_ss.raw_data_sheet['id'])
+
+    my_rows = load_sql_rows(col_ids)
+    ss_add_rows(my_ss.ss, my_ss.raw_data_sheet['id'], my_rows)
+
+
+    # WORK IN PROGRESS
     #
-    ss_model = SS_Model_r1()
-    ss_model.raw_data_sheet_name = 'Tetration On-Demand POV Raw Data'
-    ss_model.status_sheet_name = 'Tetration On-Demand POV Status'
-    ss_model.template_name = 'Tetration On-Demand POV Status-Template'
+    #
+    # Make a working copy of the new raw sql data
+    # do a simple copy of the raw sheet to a working sheet
+    response = my_ss.ss.Sheets.copy_sheet(my_ss.raw_data_sheet['id'],  # sheet_id
+                    my_ss.ss.models.ContainerDestination(
+                        {'destination_type': 'home', 'new_name': 'tmp_pov_junk'}), include='data')
+    tmp_sheet_id = response.result.id
+    tmp_sheet_rows = ss_get_row_data(my_ss.ss, tmp_sheet_id)
+    tmp_sheet_cols = ss_get_col_data(my_ss.ss, tmp_sheet_id)
 
-    sheet_details(ss_model)
+    # print(tmp_sheet_id)
+    # print(tmp_sheet_cols)
+    # print(tmp_sheet_rows)
 
-    delete_sheet(ss_model)
-    sql_data_info = get_sql_data(ss_model.raw_data_sheet_name)
+    #
+    # Create a new empty Status Sheet in SS based on the model
+    #
+    my_status_cols = create_status_cols(my_ss)
+    # ss_create_sheet(my_ss.ss, 'Tetration On-Demand POV Status', my_status_cols)
+    my_ss.status_sheet = ss_get_sheet(my_ss.ss, 'Tetration On-Demand POV Status')
 
-    sheet_details(ss_model)
-    ss_model.raw_data_col_dict = sql_data_info['col_id_dict']
-    ss_model.raw_data_sheet_id = sql_data_info['sheet_id']
+    exit()
 
-    create_status_sheet(ss_model)
 
-    add_rows_test(ss_model)
+
+
+
+
+
+
+    # Gather all the row id's from the working file
+    # Then Copy them over to the final sheet
+    # raw_rows = ss_get_row_data(my_ss.ss, my_ss.raw_data_sheet['id'])
+    # row_ids = []
+    # src_sheet_id = my_ss.raw_data_sheet['id']
+    # dst_sheet_id = my_ss.status_sheet['id']
+    # for row in raw_rows:
+    #     row_ids.append(row['id'])
+    #
+    # print(row_ids)
+    # print(src_sheet_id)
+    # print(dst_sheet_id)
+
+
+    response = my_ss.ss.Sheets.copy_rows(
+                    src_sheet_id,  # sheet_id of rows to be copied
+                    my_ss.ss.models.CopyOrMoveRowDirective({
+                        'row_ids': row_ids,
+                        'to': my_ss.ss.models.CopyOrMoveRowDestination({
+                                'sheet_id': dst_sheet_id})}))
+
+
+    # Get raw data rows
+    raw_rows = ss_get_row_data(my_ss.ss, my_ss.raw_data_sheet['id'])
+
+    for row in rows:
+        print (row['cells'])
+
+    exit()
+    add_rows_test(raw_rows)
