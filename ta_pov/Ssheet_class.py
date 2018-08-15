@@ -1,5 +1,5 @@
 from ta_pov import my_secrets
-from ta_pov.basic_functions import *
+from ta_pov.smartsheet_basic_functions import *
 import smartsheet
 import json
 
@@ -10,11 +10,13 @@ ss_config = dict(
 
 class Ssheet():
 
+    ss_token = ss_config['SS_TOKEN']
+    ss = smartsheet.Smartsheet(ss_token)
+
     def __init__(self, name):
-        ss_token = ss_config['SS_TOKEN']
-        self.ss = smartsheet.Smartsheet(ss_token)
         self.name = name
         self.sheet = {}
+        self.id = 0
         self.columns = {}
         self.rows = {}
         self.col_dict = {}
@@ -22,8 +24,9 @@ class Ssheet():
 
     def refresh(self):
         self.sheet = ss_get_sheet(self.ss, self.name)
-        self.columns = ss_get_col_data(self.ss, self.sheet['id'])
-        self.rows = ss_get_row_data(self.ss, self.sheet['id'])
+        self.id = self.sheet[0]['id']
+        self.columns = ss_get_col_data(self.ss, self.id)
+        self.rows = ss_get_row_data(self.ss, self.id)
         self.col_dict = ss_get_col_dict(self.ss, self.columns)
 
     def row_lookup(self, col_name, row_value):
@@ -41,24 +44,27 @@ class Ssheet():
         return row_ids
 
     def add_rows(self, add_rows):
-        ss_add_rows(self.ss, self.sheet['id'], add_rows)
+        ss_add_rows(self.ss, self.id, add_rows)
         return
 
     def del_rows(self, del_rows):
-        ss_del_rows(self.ss, self.sheet['id'], del_rows)
+        ss_del_rows(self.ss, self.id, del_rows)
         return
 
     def add_cols(self, add_cols):
-        ss_add_column(self.ss, self.sheet['id'], add_cols)
+        ss_add_column(self.ss, self.id, add_cols)
         return
 
     def del_cols(self, del_cols):
-        ss_del_column(self.ss, self.sheet['id'], del_cols)
+        ss_del_column(self.ss, self.id, del_cols)
         return
 
-    def mod_cell(self, col_id, my_row_dict):
-        ss_mod_cell(self.ss, self.sheet['id'], col_id, my_row_dict)
+    def mod_cell(self, col_id, row_dict):
+        ss_mod_cell(self.ss, self.id, col_id, row_dict)
         return
+
+    def __repr__(self):
+        return "Ssheet('{}')".format(self.name)
 
     # def __iter__(self):
     #     return self
@@ -72,12 +78,14 @@ class Ssheet():
 
 if __name__ == "__main__":
     my_ss = Ssheet('Tetration On-Demand POV Raw Data')
+    print(my_ss)
 
     print("Sheet Data: ", my_ss.sheet)
-    # print(my_ss.sheet['id'])
-    # print("Columns: ", my_ss.columns)
-    # print("Column Dict: ", my_ss.col_dict)
-    print("# of Rows: ", len(my_ss.rows))
+    print(my_ss.sheet['id'])
+    print("Columns: ", my_ss.columns)
+    print("Column Dict: ", my_ss.col_dict)
+    print("Row Data: ", my_ss.rows)
+    exit()
     print('Row IDs:  ', my_ss.row_lookup('cisco_owner_name', 'Chris McHenry'))
 
     # Add Columns Example

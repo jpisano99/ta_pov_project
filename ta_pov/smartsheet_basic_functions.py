@@ -2,10 +2,10 @@ def ss_get_sheet(ss, sheet_name):
     # Get Sheet meta-data
     response = ss.Sheets.list_sheets(include_all=True)
     sheets = response.data
-    sheet_info_dict = {}
+    sheet_info_dict = []
     for sheet in sheets:
         if sheet.name == sheet_name:
-            sheet_info_dict = sheet.to_dict()
+            sheet_info_dict.append(sheet.to_dict())
     return sheet_info_dict
 
 
@@ -14,15 +14,24 @@ def ss_create_sheet(ss, sheet_name, col_dict):
     # Send off to Smartsheets to create the sheet
     sheet_spec = ss.models.Sheet({'name': sheet_name, 'columns': col_dict})
     response = ss.Home.create_sheet(sheet_spec)
-
-    # Create a dict of the response json data
-    sheet_dict = response.to_dict()
-    return sheet_dict
+    return response.result.id
 
 
-def ss_delete_sheet(ss, sheet_id):
-    response = ss.Sheets.delete_sheet(sheet_id)
-    return response
+# def ss_delete_sheet(ss, sheet_id):
+#     response = ss.Sheets.delete_sheet(sheet_id)
+#     return response
+
+def ss_delete_sheet(ss, sheet_name):
+    # Get Sheet meta-data
+    response = ss.Sheets.list_sheets(include_all=True)
+    sheets = response.data
+    sheets_deleted = 0
+    for sheet in sheets:
+        if sheet.name == sheet_name:
+            print(sheet.name, sheet.id)
+            sheets_deleted += 1
+            response = ss.Sheets.delete_sheet(sheet.id)
+    return sheets_deleted
 
 
 def ss_get_template(ss, template_name):

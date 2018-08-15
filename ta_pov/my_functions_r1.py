@@ -6,7 +6,7 @@ import time
 import pytz
 # Application Passwords kept here
 from ta_pov import my_secrets
-from ta_pov.basic_functions import *
+from ta_pov.smartsheet_basic_functions import *
 
 # Smartsheet Config settings
 ss_config = dict(
