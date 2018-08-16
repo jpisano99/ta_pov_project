@@ -28,7 +28,7 @@ def ss_delete_sheet(ss, sheet_name):
     sheets_deleted = 0
     for sheet in sheets:
         if sheet.name == sheet_name:
-            print(sheet.name, sheet.id)
+            print('Deleted ', sheet.name, sheet.id)
             sheets_deleted += 1
             response = ss.Sheets.delete_sheet(sheet.id)
     return sheets_deleted
@@ -53,14 +53,22 @@ def ss_get_col_data(ss, sheet_id):
     return columns
 
 
-def ss_get_col_dict(ss, columns):
+def ss_col_name_idx(ss, columns):
     # Return a dict of {col_name:col_id}
-    col_dict = {}
+    col_name_idx = {}
     for column in columns:
         # key = column['title']
         # value = column['id']
-        col_dict[column['title']] = column['id']
-    return col_dict
+        col_name_idx[column['title']] = column['id']
+    return col_name_idx
+
+
+def ss_col_id_idx(ss, columns):
+    # Return a dict of {col_id:col_name}
+    col_id_idx = {}
+    for column in columns:
+        col_id_idx[column['id']] = column['title']
+    return col_id_idx
 
 
 def ss_get_row_data(ss, sheet_id):

@@ -2,6 +2,7 @@ from ta_pov.Ssheet_class import Ssheet
 from ta_pov.models import *
 from datetime import datetime
 from ta_pov.smartsheet_basic_functions import *
+from ta_pov.ss_mapping import sql_to_ss
 
 ss_config = dict(
     SS_TOKEN = my_secrets.passwords["SS_TOKEN"]
@@ -26,6 +27,23 @@ def create_cols_from_sql():
 
         primary_col = False
     return new_col_list
+
+
+def create_status_cols():
+    my_cols = []  # List of SS API formatted columns
+    # my_col_details = []  # List of (col_id,SQL col nam,SS col name, Data Type)
+
+    for x in sql_to_ss:
+        # my_col_details.append(('', x[0], x[1], x[3]))
+
+        # Create each column record for SS from the SS_Model object
+        # Adjust accordingly if the 'option' (x[4]) property exists
+        if x[4] == '':
+            my_cols.append({'title': x[1], 'primary': x[2], 'type': x[3]})
+        else:
+            my_cols.append({'title': x[1], 'primary': x[2], 'type': x[3], 'options': x[4]})
+
+    return my_cols
 
 
 def load_sql_rows(my_cols):
@@ -77,17 +95,42 @@ if __name__ == "__main__":
     my_cols = create_cols_from_sql()
     ss_create_sheet(ss, 'Tetration On-Demand POV Raw Data', my_cols)
 
-    # Create a SmartSheet object
+    # Create a SmartSheet object for Raw data
     my_ss = Ssheet('Tetration On-Demand POV Raw Data')
 
-    # Get the row data from mySQL
+    # Get the row data from mySQL and add to my_ss object
     my_rows = load_sql_rows(my_ss.columns)
     my_ss.add_rows(my_rows)
-    exit()
+    my_ss.refresh()
 
     #
     # All data has now be loaded from mySQL
     #
+
+    # Get the column formats to create the POV Status sheet
+    my_cols = create_status_cols()
+    ss_create_sheet(ss, 'Tetration On-Demand POV Status', my_cols)
+    my_status = Ssheet('Tetration On-Demand POV Status')
+
+    # Main Loop to go over BOT data
+    col_id_idx = my_ss.col_id_idx
+    raw_rows = my_ss.rows
+
+    for row in raw_rows:
+        print()
+        print('Row: ', row['rowNumber'], row['id'])
+        for cell in row['cells']:
+            cell_val = cell['value'] if 'value' in cell else ''
+            #
+            # Now WHAT ? ! :)
+            # Keep this cell data ?
+            # Rename it ?
+            # Modify it ?
+            print('    ', col_id_idx[cell['columnId']], cell_val)
+
+    exit()
+
+
 
 
 

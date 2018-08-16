@@ -460,8 +460,6 @@ def add_rows_old(ss_model):
     return
 
 
-
-
 def sheet_details(ss_model):
     ss = ss_model.ss
     ss_model.raw_data_sheet_id = 'None'

@@ -19,7 +19,8 @@ class Ssheet():
         self.id = 0
         self.columns = {}
         self.rows = {}
-        self.col_dict = {}
+        self.col_name_idx = {}
+        self.col_id_idx = {}
         self.refresh()
 
     def refresh(self):
@@ -27,13 +28,14 @@ class Ssheet():
         self.id = self.sheet[0]['id']
         self.columns = ss_get_col_data(self.ss, self.id)
         self.rows = ss_get_row_data(self.ss, self.id)
-        self.col_dict = ss_get_col_dict(self.ss, self.columns)
+        self.col_name_idx = ss_col_name_idx(self.ss, self.columns)
+        self.col_id_idx = ss_col_id_idx(self.ss, self.columns)
 
     def row_lookup(self, col_name, row_value):
         # Return a list of all row_ids
         # Where col_name contains row_value
         row_ids = []
-        col_id = self.col_dict[col_name]
+        col_id = self.col_name_idx[col_name]
         for row in self.rows:
             cells = row['cells']
             for cell in cells:
