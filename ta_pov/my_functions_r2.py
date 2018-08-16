@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     # Clean up and/or archive any existing SmartSheets
     ss_delete_sheet(ss, 'Tetration On-Demand POV Raw Data')
-    ss_delete_sheet(ss, 'Tetration On-Demand POV Status')
+    ss_delete_sheet(ss, 'Tetration On-Demand POV WORKING')
 
     #
     # Connect to mySQL db and pull raw BOT data into SmartSheets
@@ -109,24 +109,67 @@ if __name__ == "__main__":
 
     # Get the column formats to create the POV Status sheet
     my_cols = create_status_cols()
-    ss_create_sheet(ss, 'Tetration On-Demand POV Status', my_cols)
-    my_status = Ssheet('Tetration On-Demand POV Status')
+    ss_create_sheet(ss, 'Tetration On-Demand POV WORKING', my_cols)
+    my_status = Ssheet('Tetration On-Demand POV WORKING')
+
+    # Build a fast lookup dict from the sql_to_ss mapping structure
+    map_lookup = {}
+    for x in sql_to_ss:
+        # x[0] = the raw col
+        map_lookup[x[0]] = x[1]
 
     # Main Loop to go over BOT data
+    # and build status rows to be created
     col_id_idx = my_ss.col_id_idx
     raw_rows = my_ss.rows
 
+    new_rows = []
     for row in raw_rows:
-        print()
-        print('Row: ', row['rowNumber'], row['id'])
+        # print()
+        # print('Raw Row: ', row['rowNumber'], row['id'])
+        this_row = []
         for cell in row['cells']:
-            cell_val = cell['value'] if 'value' in cell else ''
-            #
-            # Now WHAT ? ! :)
-            # Keep this cell data ?
-            # Rename it ?
-            # Modify it ?
-            print('    ', col_id_idx[cell['columnId']], cell_val)
+            raw_cell_val = cell['value'] if 'value' in cell else ''
+            raw_col_name = col_id_idx[cell['columnId']]
+
+            # Determine how this raw_col maps to the final POV status
+            # Build a row record
+            if raw_col_name in map_lookup.keys():
+                status_col_name = map_lookup[raw_col_name]
+                status_col_id = my_status.col_name_idx[status_col_name]
+                this_row.append({'column_id': status_col_id, 'value': raw_cell_val, 'strict': False})
+            else:
+                pass
+                # print('Skipping: ', raw_col_name)
+        # Append this_row to the collection of new_rows
+        new_rows.append(this_row)
+
+    # Send the list of the new_rows off to be added
+    # To the final POV status sheet
+    my_status.add_rows(new_rows)
+    my_status.refresh()
+
+    # Create a new blank POV Update from the Template
+    template_sheet_id = ss_get_template(ss, 'Tetration On-Demand POV Status-Template-Rev1')
+    response = ss.Home.create_sheet_from_template(
+        ss.models.Sheet({'name': 'Tetration On-Demand POV Status', 'from_id': template_sheet_id['id']}))
+
+    my_final_ss = Ssheet('Tetration On-Demand POV Status')
+
+    # Gather all the row id's from the working file
+    # Then Copy them over to the final status sheet
+    status_update_rows = []
+    for row in my_status.rows:
+        status_update_rows.append(row['id'])
+
+    print(status_update_rows)
+
+    response = ss.Sheets.copy_rows(
+        my_status.id,  # sheet_id of rows to be copied
+        ss.models.CopyOrMoveRowDirective({
+            'row_ids': status_update_rows,
+            'to': ss.models.CopyOrMoveRowDestination({
+                'sheet_id': my_final_ss.id})}))
 
     exit()
 
