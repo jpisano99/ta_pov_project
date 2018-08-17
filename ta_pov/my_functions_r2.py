@@ -5,13 +5,13 @@ from ta_pov.smartsheet_basic_functions import *
 from ta_pov.ss_mapping import sql_to_ss
 
 ss_config = dict(
-    SS_TOKEN = my_secrets.passwords["SS_TOKEN"]
+    SS_TOKEN=my_secrets.passwords["SS_TOKEN"]
 )
 
 
 def create_cols_from_sql():
     # # Run a Query to get the col names
-    sql= "SHOW COLUMNS FROM povbot.tblPovs "
+    sql = "SHOW COLUMNS FROM povbot.tblPovs "
     cols = db.engine.execute(sql)
 
     new_col_list = []
@@ -61,7 +61,7 @@ def load_sql_rows(my_cols):
             column_name = column['title']
             column_id = column['id']
 
-            row_value = eval("pov."+column_name)
+            row_value = eval("pov." + column_name)
 
             # Change None type to something else
             if row_value is None:
@@ -122,7 +122,6 @@ if __name__ == "__main__":
     # and build status rows to be created
     col_id_idx = my_ss.col_id_idx
     raw_rows = my_ss.rows
-
     new_rows = []
     for row in raw_rows:
         # print()
@@ -172,6 +171,7 @@ if __name__ == "__main__":
                 'sheet_id': my_final_ss.id})}))
 
     exit()
+
 
 
 
