@@ -69,7 +69,8 @@ def load_sql_rows(my_cols):
 
             # Change datetime to string
             if isinstance(row_value, datetime):
-                row_value = row_value.strftime("%A, %d. %B %Y %I:%M%p")
+                # row_value = row_value.strftime("%A, %d. %B %Y %I:%M%p")
+                row_value = row_value.strftime("%m/%d/%y")
 
             this_row.append({'column_id': column_id, 'value': row_value, 'strict': False})
 
@@ -79,13 +80,65 @@ def load_sql_rows(my_cols):
     return my_rows
 
 
+def test_this(ss):
+    # Create a SmartSheet object for Raw data
+    my_raw_ss = Ssheet('Tetration On-Demand POV Raw Data')
+    my_status = Ssheet('Tetration On-Demand POV WORKING')
+
+    # Build a fast lookup dict from the sql_to_ss mapping structure
+    map_lookup = {}
+
+    for x in sql_to_ss:
+        # x[0] = the raw col
+        map_lookup[x[0]] = x[1]
+
+    #
+    # Main Loop to loop over BOT data
+    # and build status rows to be created
+    col_id_idx = my_raw_ss.col_id_idx
+    raw_rows = my_raw_ss.rows
+    new_ss_rows = []
+
+    for row in raw_rows:
+        print()
+        print('Processing Raw Row: ', row['rowNumber'], row['id'])
+        this_ss_row = []
+        this_row_dict = {}
+        for cell in row['cells']:
+            raw_cell_val = cell['value'] if 'value' in cell else ''
+            raw_col_name = col_id_idx[cell['columnId']]
+            this_row_dict[raw_col_name] = raw_cell_val
+
+            # Determine how this raw_col maps to the final POV status
+            # Build a row record
+            if raw_col_name in map_lookup.keys():
+                status_col_name = map_lookup[raw_col_name]
+                status_col_id = my_status.col_name_idx[status_col_name]
+                this_ss_row.append({'column_id': status_col_id, 'value': raw_cell_val, 'strict': False})
+            else:
+                # Does Nothing
+                pass
+
+        print('Raw Row: ', this_row_dict)
+        print('SS formatted row: ', this_ss_row)
+
+        # Append this_row to the collection of new_rows
+        new_ss_rows.append(this_ss_row)
+
+    return
+
+
 if __name__ == "__main__":
     ss_token = ss_config['SS_TOKEN']
     ss = smartsheet.Smartsheet(ss_token)
 
+    #test_this(ss)
+
+    # exit()
     # Clean up and/or archive any existing SmartSheets
     ss_delete_sheet(ss, 'Tetration On-Demand POV Raw Data')
     ss_delete_sheet(ss, 'Tetration On-Demand POV WORKING')
+    ss_delete_sheet(ss, 'Tetration On-Demand POV Status')
 
     #
     # Connect to mySQL db and pull raw BOT data into SmartSheets
@@ -96,18 +149,18 @@ if __name__ == "__main__":
     ss_create_sheet(ss, 'Tetration On-Demand POV Raw Data', my_cols)
 
     # Create a SmartSheet object for Raw data
-    my_ss = Ssheet('Tetration On-Demand POV Raw Data')
+    my_raw_ss = Ssheet('Tetration On-Demand POV Raw Data')
 
-    # Get the row data from mySQL and add to my_ss object
-    my_rows = load_sql_rows(my_ss.columns)
-    my_ss.add_rows(my_rows)
-    my_ss.refresh()
+    # Get the row data from mySQL and add to my_raw_ss object
+    my_rows = load_sql_rows(my_raw_ss.columns)
+    my_raw_ss.add_rows(my_rows)
+    my_raw_ss.refresh()
 
     #
     # All data has now be loaded from mySQL
     #
-
-    # Get the column formats to create the POV Status sheet
+    # exit()
+    # Get the column formats to create the POV WORKING sheet
     my_cols = create_status_cols()
     ss_create_sheet(ss, 'Tetration On-Demand POV WORKING', my_cols)
     my_status = Ssheet('Tetration On-Demand POV WORKING')
@@ -118,14 +171,15 @@ if __name__ == "__main__":
         # x[0] = the raw col
         map_lookup[x[0]] = x[1]
 
-    # Main Loop to go over BOT data
+    #
+    # Main Loop to loop over BOT data
     # and build status rows to be created
-    col_id_idx = my_ss.col_id_idx
-    raw_rows = my_ss.rows
+    col_id_idx = my_raw_ss.col_id_idx
+    raw_rows = my_raw_ss.rows
     new_rows = []
     for row in raw_rows:
-        # print()
-        # print('Raw Row: ', row['rowNumber'], row['id'])
+        print()
+        print('Raw Row: ', row['rowNumber'], row['id'])
         this_row = []
         for cell in row['cells']:
             raw_cell_val = cell['value'] if 'value' in cell else ''

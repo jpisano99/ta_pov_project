@@ -1,3 +1,8 @@
+#
+# [sql_col_name, smartsheet_col_name, smartsheet key?, smartsheet data type, [list of choices for pick list]
+#
+
+
 sql_to_ss = [['id', 'POV ID', True, 'TEXT_NUMBER', ''],
               ['cisco_owner_name', 'POV Owner Name', False, 'TEXT_NUMBER', ''],
               ['company_name', 'Customer Name', False, 'TEXT_NUMBER', ''],

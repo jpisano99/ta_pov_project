@@ -8,7 +8,7 @@ ss_config = dict(
 )
 
 
-class Ssheet():
+class Ssheet:
 
     ss_token = ss_config['SS_TOKEN']
     ss = smartsheet.Smartsheet(ss_token)
@@ -44,6 +44,17 @@ class Ssheet():
                     if cell_val == row_value:
                         row_ids.append(row['id'])
         return row_ids
+
+    def get_rows(self):
+        row_dict = {}
+        for row in self.rows:
+            row_record = {}
+            for cell in row['cells']:
+                raw_cell_val = cell['value'] if 'value' in cell else ''
+                raw_col_name = self.col_id_idx[cell['columnId']]
+                row_record[raw_col_name] = raw_cell_val
+            row_dict[row['rowNumber']] = row_record
+        return row_dict
 
     def add_rows(self, add_rows):
         ss_add_rows(self.ss, self.id, add_rows)

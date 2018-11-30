@@ -15,7 +15,7 @@ def index():
     # Get existing sheet info (if any)
     sheet_dict = sheet_details('POV BOT Status')
 
-    return render_template('index.html',pov_count=pov_count,sheet_dict=sheet_dict)
+    return render_template('index.html', pov_count=pov_count, sheet_dict=sheet_dict)
 
 
 @app.route('/update_ss')
