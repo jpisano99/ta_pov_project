@@ -1,11 +1,16 @@
+import smartsheet
+from ta_pov import my_secrets
+
+
 def ss_get_sheet(ss, sheet_name):
     # Get Sheet meta-data
     response = ss.Sheets.list_sheets(include_all=True)
     sheets = response.data
-    sheet_info_dict = []
+    # sheet_info_dict = []
+    sheet_info_dict = {}
     for sheet in sheets:
         if sheet.name == sheet_name:
-            sheet_info_dict.append(sheet.to_dict())
+            sheet_info_dict.update(sheet.to_dict())
     return sheet_info_dict
 
 
@@ -140,3 +145,10 @@ def ss_mod_cell(ss, sheet_id, col_id, my_row_dict):
 
     return
 
+
+if __name__ == "__main__":
+    ss_token = my_secrets.passwords['SS_TOKEN']
+    ss = smartsheet.Smartsheet(ss_token)
+    sheet_dict = ss_get_sheet(ss, 'Tetration On-Demand POV Status')
+    print(sheet_dict)
+    print('TIME MOD:', sheet_dict['modifiedAt'])

@@ -9,6 +9,26 @@ ss_config = dict(
 )
 
 
+def sheet_details(sheet_name):
+    this_sheet_info = ss_get_sheet(sheet_name)
+    # ss = my_ss_model.ss
+    shheet_name = my_ss_model.sheet_name
+    my_ss_model.sheet_id = 'None'
+
+    # Find my Sheet ID
+    response = ss.Sheets.list_sheets(include_all=True)
+    sheets = response.data
+
+    for sheet in sheets:
+        if sheet.name == sheet_name:
+            my_ss_model.sheet_id = sheet.id
+            my_ss_model.sheet_url = sheet.permalink
+            my_ss_model.total_rows = sheet.total_row_count
+            my_ss_model.last_modified = sheet.modified_at.astimezone(pytz.timezone('US/Eastern'))
+
+    return
+
+
 def create_cols_from_sql():
     # # Run a Query to get the col names
     sql = "SHOW COLUMNS FROM povbot.tblPovs "

@@ -7,14 +7,18 @@ from ta_pov.my_functions import *
 # User Passwords kept here
 from ta_pov import my_secrets
 
+
 @app.route('/index')
 def index():
     # Check in on the POV db
     povs = ta_povs.query.order_by(ta_povs.company_name).all()
     pov_count= ta_povs.query.count()
     # Get existing sheet info (if any)
-    sheet_dict = sheet_details('POV BOT Status')
-
+    # sheet_dict = sheet_details('Tetration On-Demand POV Status')
+    ss_token = ss_config['SS_TOKEN']
+    ss = smartsheet.Smartsheet(ss_token)
+    sheet_dict = ss_get_sheet(ss, 'Tetration On-Demand POV Status')
+    print(sheet_dict)
     return render_template('index.html', pov_count=pov_count, sheet_dict=sheet_dict)
 
 
